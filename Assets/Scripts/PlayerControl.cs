@@ -9,6 +9,9 @@ public class PlayerControl : MonoBehaviour
     public float jumpheight = 1.0f;
     Vector2 movedirection = Vector2.zero;
     CharacterController controller;
+    Rigidbody rigidbody;
+    Vector2 kickhitbox = new Vector2(1, 1);
+    public float kickstrength = 10f;
  
     // Start is called before the first frame update
     void Start()
@@ -16,12 +19,32 @@ public class PlayerControl : MonoBehaviour
         
         controller = GetComponent<CharacterController>();
         
+
+        
+    }
+
+    void Kick()
+    {
+        Collider[] collider = Physics.OverlapBox(transform.position+ -transform.right, kickhitbox);
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            foreach (Collider kicked in collider)
+            {
+                rigidbody = kicked.GetComponent<Rigidbody>();
+
+                if (rigidbody != null)
+                {
+                    rigidbody.AddForce(-transform.right * kickstrength, ForceMode.Impulse);
+                }
+            }
+        }
         
     }
 
     // Update is called once per frame
     void Update()
     {
+        Kick();
        
         if (controller.isGrounded)
         {
