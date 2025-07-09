@@ -10,7 +10,7 @@ public class CameraRotatelock : MonoBehaviour
 
     void Start()
     {
-        player = GameObject.Find("Capsule");
+        player = GameObject.Find("Player");
     }
 
     void Update()
