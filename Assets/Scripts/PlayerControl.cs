@@ -12,13 +12,14 @@ public class PlayerControl : MonoBehaviour
     private bool isclimbing = false;
     private bool jumpforce = false;
     public bool iskicked = false;
+    public float kickstrength = 10f;
+    public bool isseen = false;
     private float ClimbingInput;
     float horizontalmove;
     Rigidbody2D controller;
     Rigidbody2D rigidbody;
-    
-    Vector2 kickhitbox = new Vector2(1, 1);
-    public float kickstrength = 10f;
+    Vector2 kickhitbox = new Vector2(1,1);
+    public LayerMask obstaclemask;
  
     // Start is called before the first frame update
     void Start()
@@ -26,9 +27,11 @@ public class PlayerControl : MonoBehaviour
         controller = GetComponent<Rigidbody2D>();
     }
 
+    
+
     void Kick()
     {
-        Collider2D collider = Physics2D.OverlapBox(transform.position+ -transform.right, kickhitbox, 50f);
+        Collider2D collider = Physics2D.OverlapBox(transform.position+ transform.right , kickhitbox, 50f, obstaclemask);
         
         if (Input.GetKeyDown(KeyCode.Q)&& collider.CompareTag("Obstacle"))
         {
@@ -39,7 +42,7 @@ public class PlayerControl : MonoBehaviour
             if (rigidbody != null)
             {
                 rigidbody.constraints &= ~RigidbodyConstraints2D.FreezePositionX;
-                rigidbody.AddForce(-transform.right * kickstrength, ForceMode2D.Impulse);
+                rigidbody.AddForce(transform.right * kickstrength, ForceMode2D.Impulse);
                 iskicked = true;
             }
             
@@ -47,7 +50,8 @@ public class PlayerControl : MonoBehaviour
         }
         if (iskicked && rigidbody != null && rigidbody.velocity.magnitude < 0.1)
         {
-            rigidbody.constraints = RigidbodyConstraints2D.FreezeAll;
+            rigidbody.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
+            
             iskicked = false;
         }
     }
@@ -56,7 +60,8 @@ public class PlayerControl : MonoBehaviour
     {
         if (collider != null && collider.CompareTag("Ladder"))
         {
-            isclimbing = true; 
+            isclimbing = true;
+            horizontalmove = 0;
         }
         
     }
@@ -64,7 +69,7 @@ public class PlayerControl : MonoBehaviour
     void OnTriggerExit2D(Collider2D collider)
     {
         isclimbing = false;
-        controller.gravityScale = 1.5f;
+        controller.gravityScale = 6.0f;
     }
 
     
@@ -73,6 +78,7 @@ public class PlayerControl : MonoBehaviour
     void Update()
     {
         Kick();
+
         ClimbingInput = Input.GetAxis("Vertical");
         horizontalmove = Input.GetAxis("Horizontal");
             
@@ -84,11 +90,11 @@ public class PlayerControl : MonoBehaviour
         
         if (Input.GetKey(KeyCode.A)|| Input.GetKey(KeyCode.LeftArrow))
         {
-            transform.rotation = Quaternion.Euler(0f, 0, 0f);
+            transform.rotation = Quaternion.Euler(0f, -180, 0f);
         }
         else if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
         {
-            transform.rotation = Quaternion.Euler(0f, -180, 0f);
+            transform.rotation = Quaternion.Euler(0f, 0, 0f);
             
         }
     }
@@ -109,4 +115,10 @@ public class PlayerControl : MonoBehaviour
             controller.velocity = new Vector2(controller.velocity.x,ClimbingInput * climbspeed);
         }
     }
-}
+    void OnDrawGizmos()
+    {
+        //kick hit box visualizer
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireCube(transform.position + transform.right , kickhitbox);
+    }
+    }
