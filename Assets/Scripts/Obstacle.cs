@@ -4,17 +4,17 @@ using UnityEngine;
 
 public class Obstacle : MonoBehaviour
 {
-    public PlayerControl player;
+    PlayerControl player;
     // Start is called before the first frame update
     void Start()
     {
-        
+        player = GameObject.Find("Player").GetComponent<PlayerControl>();
     }
 
     // Update is called once per frame
     void Update()
     {
-       
+        Debug.Log("iskicked:" + player.iskicked);
     }
 
 
