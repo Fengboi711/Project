@@ -12,7 +12,7 @@ public class PlayerControl : MonoBehaviour
     public int health = 10;
     private bool isclimbing = false;
     private bool jumpforce = false;
-    public bool iskicked = false;
+    private Obstacle obstacle;
     public float kickstrength = 10f;
     public bool isseen = false;
     private float ClimbingInput;
@@ -25,11 +25,16 @@ public class PlayerControl : MonoBehaviour
     Vector2 attackhitbox = Vector2.zero;
     public LayerMask obstaclemask;
     public LayerMask playermask;
-      
+    private BoxCollider2D playercollider;
+    private Vector2 pickuphitbox = new Vector2(6, 4);
+    public bool haskey = false;
+    private Vector2 jumpcheck = new Vector2(0.1f, 0.1f);
     // Start is called before the first frame update
     void Start()
     {
         controller = GetComponent<Rigidbody2D>();
+        obstacle = GameObject.FindGameObjectWithTag("Obstacle").GetComponent<Obstacle>();
+        playercollider = GetComponent<BoxCollider2D>();
     }
 
     
@@ -38,12 +43,13 @@ public class PlayerControl : MonoBehaviour
         ClimbingInput = Input.GetAxis("Vertical");
         horizontalmove = Input.GetAxis("Horizontal");
 
-        Collider2D jumpcollider = Physics2D.OverlapBox((Vector2)(transform.position-transform.up) - offsetvector , kickhitbox,0f, ~playermask);
-        Debug.Log(jumpcollider.tag);
+        Collider2D jumpcollider = Physics2D.OverlapBox((Vector2)(transform.position-transform.up) - offsetvector , jumpcheck,0f, ~playermask);
+        
 
         if (Input.GetKeyDown(KeyCode.Space) && jumpcollider.CompareTag("Floor"))
         {
             jumpforce = true;
+            
         }
 
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
@@ -57,6 +63,20 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    void PickUp()
+    {
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            LayerMask keymask = LayerMask.GetMask("Key");
+            Collider2D pickupbox = Physics2D.OverlapBox(transform.position, pickuphitbox, 0f, keymask);
+            if (pickupbox != null && pickupbox.CompareTag("Key"))
+            {
+                haskey = true;
+            }
+            Debug.Log("haskey: " + haskey);
+            Debug.Log("inside box: " + pickupbox);
+        }
+    }
     void Kick()
     {
         Collider2D collider = Physics2D.OverlapBox(transform.position+ transform.right , kickhitbox, 50f, obstaclemask);
@@ -71,16 +91,16 @@ public class PlayerControl : MonoBehaviour
             {
                 rigidbody.constraints &= ~RigidbodyConstraints2D.FreezePositionX;
                 rigidbody.AddForce(transform.right * kickstrength, ForceMode2D.Impulse);
-                iskicked = true;
+                obstacle.iskicked = true;
             }
             
             
         }
-        if (iskicked && rigidbody != null && rigidbody.velocity.magnitude < 0.1)
+        if (obstacle.iskicked && rigidbody != null && rigidbody.velocity.magnitude < 0.1)
         {
             rigidbody.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
             
-            iskicked = false;
+            obstacle.iskicked = false;
         }
     }
 
@@ -99,13 +119,26 @@ public class PlayerControl : MonoBehaviour
         yield return new WaitForSeconds(1);
         canattack = false;
     }
+
+    void Crouch()
+    {
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            playercollider.size = new Vector2(1, 2f);
+        }
+        if (Input.GetKeyUp(KeyCode.C))
+        {
+            playercollider.size = new Vector2(1, 4f);
+        }
+
+    }
     void Dead()
     {
         if(health <= 0)
         {
             Destroy(gameObject);
         }
-        Debug.Log(health);
+        Debug.Log("Player Health: "+health);
     }
 
     void OnTriggerEnter2D(Collider2D collider)
@@ -132,12 +165,18 @@ public class PlayerControl : MonoBehaviour
         Kick();
         Move();
         Dead();
-
+        Crouch();
+        PickUp();
         if (Input.GetMouseButtonDown(0))
         {
             StartCoroutine(Attack());
         }
-        
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Debug.Log("You have pressed Space");
+
+        }
+
     }
     void FixedUpdate()
     {
@@ -161,7 +200,8 @@ public class PlayerControl : MonoBehaviour
         //kick hit box visualizer
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(transform.position + transform.right , kickhitbox);
-        Gizmos.DrawWireCube((Vector2)(transform.position - transform.up) - offsetvector , kickhitbox);
+        Gizmos.DrawWireCube((Vector2)(transform.position - transform.up) - offsetvector , jumpcheck);
         Gizmos.DrawWireCube(transform.position + transform.right, attackhitbox);
+        Gizmos.DrawWireCube(transform.position, pickuphitbox);
     }
 }

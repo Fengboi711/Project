@@ -5,6 +5,7 @@ using UnityEngine;
 public class Obstacle : MonoBehaviour
 {
     PlayerControl player;
+    public bool iskicked = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -14,13 +15,13 @@ public class Obstacle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log("iskicked:" + player.iskicked);
+        Debug.Log("iskicked:" + iskicked);
     }
 
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.gameObject.CompareTag("Enemy") && player.iskicked == true)
+        if(collision.gameObject.CompareTag("Enemy") && iskicked == true)
         {
             Destroy(gameObject);
         }

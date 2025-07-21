@@ -11,6 +11,7 @@ public class Enemy : MonoBehaviour
     GameObject player;
     PlayerControl playercheck;
     public LayerMask mask;
+    private bool isclimbing = false;
     public int enemyhealth = 5;
     private bool isplayer = false;
     private Vector2 lineofsight;
@@ -25,7 +26,7 @@ public class Enemy : MonoBehaviour
     Vector2 pointb;
     Vector2 targetpoint;
     Vector2 attackhitbox = Vector2.zero;
-
+    Obstacle obstacle;
 
     // Start is called before the first frame update
     void Start()
@@ -35,6 +36,7 @@ public class Enemy : MonoBehaviour
         pointb = (Vector2)enemyspawn.position - new Vector2(offset, 0);
         targetpoint = pointa;
         playercheck = GameObject.FindWithTag("Player").GetComponent<PlayerControl>();
+        obstacle = GameObject.FindGameObjectWithTag("Obstacle").GetComponent<Obstacle>();
         player = GameObject.FindWithTag("Player");
     }
 
@@ -69,19 +71,43 @@ public class Enemy : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D enemycollide)
     {
-        if (enemycollide.gameObject.CompareTag("Obstacle") && playercheck.iskicked == true)
+        if (enemycollide.gameObject.CompareTag("Obstacle") && obstacle.iskicked == true)
         {
             StartCoroutine(Stunned());
         }
+        
+        //isclimbing = false;
+        Debug.Log("isclimbing:" + isclimbing);
+    }
+
+    private void OnCollisionStay2D(Collision2D enemycollision)
+    {
+        if (enemycollision.gameObject.CompareTag("Obstacle") && obstacle.iskicked == false)
+
+        {
+            isclimbing = true;
+
+            StartCoroutine(ClimbOver());
+
+        }
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        enemycontrol.gravityScale = 6;
+        speed = 2.0f;
+        isclimbing = false;
+
     }
     IEnumerator Stunned()
     {
         isstunned = true;
         speed = 0;
-        
-        yield return new WaitForSeconds(2f);
+        Debug.Log("Enemy is stunned");
+        yield return new WaitForSeconds(5f);
         isstunned = false;
         speed = originalspeed;
+        Debug.Log("Enemy is no longer stunned");
         
     }
 
@@ -89,7 +115,7 @@ public class Enemy : MonoBehaviour
     {
         if (isattacking) yield break;
         attackhitbox = new Vector2(2, 2);
-        Collider2D attackcollider = Physics2D.OverlapBox(transform.position-transform.right,attackhitbox, 0f);
+        Collider2D attackcollider = Physics2D.OverlapBox(transform.position+transform.right,attackhitbox, 0f);
         if(attackcollider != null && attackcollider.CompareTag("Player") && !isstunned)
         {
             isattacking = true;
@@ -111,8 +137,8 @@ public class Enemy : MonoBehaviour
         LayerMask laddermask = ~mask;
         lineofsight = player.transform.position - transform.position;
         //Raycast visualizer
-        Debug.DrawRay(transform.position - transform.right , lineofsight, Color.red);
-        hitdata = Physics2D.Raycast(transform.position -transform.right, lineofsight, 10f, laddermask);
+        Debug.DrawRay(transform.position + transform.right , lineofsight, Color.red);
+        hitdata = Physics2D.Raycast(transform.position +transform.right, lineofsight, 10f, laddermask);
         if (hitdata.collider != null && hitdata.collider.CompareTag("Player"))
         {
             isplayer = true;
@@ -122,6 +148,22 @@ public class Enemy : MonoBehaviour
         
     }
 
+    
+    IEnumerator ClimbOver()
+    {
+        
+        while(isclimbing == true)
+        {
+            
+           
+            enemycontrol.velocity = new Vector2(0, 3);
+            yield return new WaitForSeconds(3f);
+            enemycontrol.velocity = new Vector2(1,enemycontrol.velocity.y);
+            yield return null;
+        }
+        if (isclimbing) yield break;
+
+    }
     void Dead()
     {
         if (enemyhealth <= 0)
@@ -145,9 +187,9 @@ public class Enemy : MonoBehaviour
     void FixedUpdate()
     {
 
-        if (isplayer)
+        if (isplayer && isclimbing == false)
         {
-            if(lineofsight.magnitude > 2.5f)
+            if(lineofsight.magnitude > 2f)
             {
                 lineofsight.y = 0;
                 enemycontrol.velocity = (lineofsight.normalized) * speed;
@@ -158,16 +200,27 @@ public class Enemy : MonoBehaviour
             }
             
         }
-        else
+        else if(!isplayer)
         {
             enemycontrol.velocity = new Vector2(enemypos.x, enemycontrol.velocity.y);
         }
         
+        if(enemycontrol.velocity.x > 0.001f)
+        {
+            transform.rotation = Quaternion.Euler(0, 0, 0);
+        }
+
+        else if(enemycontrol.velocity.x < -0.001f)
+        {
+            transform.rotation = Quaternion.Euler(0, -180, 0);
+        }
         
     }
+
+
     void OnDrawGizmos()
     {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(transform.position-transform.right, attackhitbox);
+        Gizmos.DrawWireCube(transform.position+transform.right, attackhitbox);
     }
 }

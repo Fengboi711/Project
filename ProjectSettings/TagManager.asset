@@ -8,6 +8,7 @@ TagManager:
   - Obstacle
   - Enemy
   - Floor
+  - Key
   layers:
   - Default
   - TransparentFX
@@ -17,7 +18,7 @@ TagManager:
   - UI
   - Obstacle
   - Ladder
-  - 
+  - Key
   - 
   - 
   - 
