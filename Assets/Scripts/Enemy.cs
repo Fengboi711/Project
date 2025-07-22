@@ -16,7 +16,7 @@ public class Enemy : MonoBehaviour
     private bool isplayer = false;
     private Vector2 lineofsight;
     private bool isattacking = false;
-    private bool isstunned = false;
+    public bool isstunned = false;
     Vector2 enemypos = Vector2.zero;
     public float speed = 2.0f;
     public float originalspeed = 2.0f;
@@ -73,7 +73,8 @@ public class Enemy : MonoBehaviour
     {
         if (enemycollide.gameObject.CompareTag("Obstacle") && obstacle.iskicked == true)
         {
-            StartCoroutine(Stunned());
+            isstunned = true;
+            
         }
         
         //isclimbing = false;
@@ -101,7 +102,7 @@ public class Enemy : MonoBehaviour
     }
     IEnumerator Stunned()
     {
-        isstunned = true;
+        
         speed = 0;
         Debug.Log("Enemy is stunned");
         yield return new WaitForSeconds(5f);
@@ -181,7 +182,10 @@ public class Enemy : MonoBehaviour
         StartCoroutine(Patrol());
         StartCoroutine(Attack());
         Dead();
-        
+        if (isstunned)
+        {
+            StartCoroutine(Stunned());
+        }
         
     }
     void FixedUpdate()

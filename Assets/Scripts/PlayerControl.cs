@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEditor.SceneManagement;
+using UnityEditor.VersionControl;
 using UnityEngine;
 
 public class PlayerControl : MonoBehaviour
 {
+    
     public float gravity = 2.0f;
     public float movespeed = 10.0f;
     public float jumpheight = 20.0f;
@@ -29,12 +32,17 @@ public class PlayerControl : MonoBehaviour
     private Vector2 pickuphitbox = new Vector2(6, 4);
     public bool haskey = false;
     private Vector2 jumpcheck = new Vector2(0.1f, 0.1f);
+    GameObject fireball;
+    bool canfire = false;
+    public Vector2 spawnpoint;
+    
     // Start is called before the first frame update
     void Start()
     {
         controller = GetComponent<Rigidbody2D>();
         obstacle = GameObject.FindGameObjectWithTag("Obstacle").GetComponent<Obstacle>();
         playercollider = GetComponent<BoxCollider2D>();
+        
     }
 
     
@@ -63,6 +71,38 @@ public class PlayerControl : MonoBehaviour
         }
     }
 
+    IEnumerator FireBallSpell()
+    {
+        
+        if (canfire) yield break;
+        canfire = true;
+        fireball = Resources.Load<GameObject>("Prefabs/Fireball");
+        
+        GameObject fireballinstant = Instantiate(fireball, transform.position + transform.right, transform.rotation);
+        
+        Rigidbody2D fireballrb = fireballinstant.GetComponent<Rigidbody2D>();
+        fireballrb.AddForce((Vector2)(transform.right ) * 10f + new Vector2(0, 3), ForceMode2D.Impulse);
+        yield return new WaitForSeconds(2);
+        canfire = false;
+    }
+
+    IEnumerator Fireflysummon()
+    {
+        GameObject firefly = Resources.Load<GameObject>("Prefabs/fireflyplaceholder");
+
+        for (int i = 0; i < 6; i++)
+        {
+            spawnpoint = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+            GameObject fireflyinstant = Instantiate(firefly, (Vector2)transform.position + spawnpoint, transform.rotation);
+            fireflymoves fireflymove = fireflyinstant.GetComponent<fireflymoves>();
+            fireflymove.flyposition = spawnpoint;
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
+    void FireflySpell()
+    {
+        StartCoroutine(Fireflysummon());
+    }
     void PickUp()
     {
         if (Input.GetKeyDown(KeyCode.E))
@@ -162,11 +202,16 @@ public class PlayerControl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        
         Kick();
         Move();
         Dead();
         Crouch();
         PickUp();
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            StartCoroutine(FireBallSpell());
+        }
         if (Input.GetMouseButtonDown(0))
         {
             StartCoroutine(Attack());
@@ -176,7 +221,10 @@ public class PlayerControl : MonoBehaviour
             Debug.Log("You have pressed Space");
 
         }
-
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            FireflySpell();
+        }
     }
     void FixedUpdate()
     {
