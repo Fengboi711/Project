@@ -4,7 +4,8 @@ using Unity.VisualScripting;
 using UnityEditor.SceneManagement;
 using UnityEditor.VersionControl;
 using UnityEngine;
-
+using TMPro;
+using UnityEngine.UI;
 public class PlayerControl : MonoBehaviour
 {
     
@@ -35,7 +36,8 @@ public class PlayerControl : MonoBehaviour
     GameObject fireball;
     bool canfire = false;
     public Vector2 spawnpoint;
-    
+    public TextMeshProUGUI win;
+    public TextMeshProUGUI lose;
     // Start is called before the first frame update
     void Start()
     {
@@ -103,18 +105,24 @@ public class PlayerControl : MonoBehaviour
     {
         StartCoroutine(Fireflysummon());
     }
-    void PickUp()
+    void Interact()
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
-            LayerMask keymask = LayerMask.GetMask("Key");
-            Collider2D pickupbox = Physics2D.OverlapBox(transform.position, pickuphitbox, 0f, keymask);
-            if (pickupbox != null && pickupbox.CompareTag("Key"))
+            LayerMask keymask = LayerMask.GetMask("Key", "Door");
+            Collider2D interactbox = Physics2D.OverlapBox(transform.position, pickuphitbox, 0f, keymask);
+            if (interactbox != null && interactbox.CompareTag("Key"))
             {
                 haskey = true;
             }
+            if (haskey && interactbox.CompareTag("Door"))
+            {
+                Destroy(interactbox.gameObject);
+                win.gameObject.SetActive(true);
+                Time.timeScale = 0f;
+            }
             Debug.Log("haskey: " + haskey);
-            Debug.Log("inside box: " + pickupbox);
+            Debug.Log("inside box: " + interactbox);
         }
     }
     void Kick()
@@ -177,6 +185,8 @@ public class PlayerControl : MonoBehaviour
         if(health <= 0)
         {
             Destroy(gameObject);
+            lose.gameObject.SetActive(true);
+            Time.timeScale = 0f;
         }
         Debug.Log("Player Health: "+health);
     }
@@ -207,7 +217,7 @@ public class PlayerControl : MonoBehaviour
         Move();
         Dead();
         Crouch();
-        PickUp();
+        Interact();
         if (Input.GetKeyDown(KeyCode.Z))
         {
             StartCoroutine(FireBallSpell());
