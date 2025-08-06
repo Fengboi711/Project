@@ -14,6 +14,7 @@ public class PlayerControl : MonoBehaviour
     public float jumpheight = 20.0f;
     public float climbspeed = 5.0f;
     public int health = 10;
+    public int currenthealth;
     private bool isclimbing = false;
     private bool jumpforce = false;
     private Obstacle obstacle;
@@ -38,9 +39,16 @@ public class PlayerControl : MonoBehaviour
     public Vector2 spawnpoint;
     public TextMeshProUGUI win;
     public TextMeshProUGUI lose;
+    bool firelflysummoned = false;
+    public Health healthbar;
+    public Animator animator;
+    bool isjumping = false;
+
     // Start is called before the first frame update
     void Start()
     {
+        currenthealth = health;
+        healthbar.SetMaxHealth(health);
         controller = GetComponent<Rigidbody2D>();
         obstacle = GameObject.FindGameObjectWithTag("Obstacle").GetComponent<Obstacle>();
         playercollider = GetComponent<BoxCollider2D>();
@@ -50,8 +58,10 @@ public class PlayerControl : MonoBehaviour
     
     void Move()
     {
+
         ClimbingInput = Input.GetAxis("Vertical");
         horizontalmove = Input.GetAxis("Horizontal");
+        
 
         Collider2D jumpcollider = Physics2D.OverlapBox((Vector2)(transform.position-transform.up) - offsetvector , jumpcheck,0f, ~playermask);
         
@@ -61,6 +71,7 @@ public class PlayerControl : MonoBehaviour
             jumpforce = true;
             
         }
+        
 
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
         {
@@ -101,9 +112,13 @@ public class PlayerControl : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
         }
     }
-    void FireflySpell()
+    IEnumerator FireflySpell()
     {
+        if (firelflysummoned) yield break;
+        firelflysummoned = true;
         StartCoroutine(Fireflysummon());
+        yield return new WaitForSeconds(5f);
+        firelflysummoned = false;
     }
     void Interact()
     {
@@ -180,15 +195,17 @@ public class PlayerControl : MonoBehaviour
         }
 
     }
-    void Dead()
+    IEnumerator Dead()
     {
-        if(health <= 0)
+        if(currenthealth <= 0)
         {
-            Destroy(gameObject);
+            
+            animator.Play("Die");
+            yield return new WaitForSeconds(3f);
             lose.gameObject.SetActive(true);
             Time.timeScale = 0f;
         }
-        Debug.Log("Player Health: "+health);
+        Debug.Log("Player Health: "+currenthealth);
     }
 
     void OnTriggerEnter2D(Collider2D collider)
@@ -212,18 +229,33 @@ public class PlayerControl : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if(Mathf.Abs(controller.velocity.y) <= 0.01 || isclimbing == true)
+        {
+            isjumping = false;
+        }
+        else if(Mathf.Abs(controller.velocity.y) > 0)
+        {
+            isjumping = true;
+        }
+        animator.SetBool("isclimbing", isclimbing);
         Kick();
         Move();
-        Dead();
+        //animator.SetFloat("Speed", Mathf.Abs(horizontalmove));
+        animator.SetFloat("Speed", Mathf.Abs(controller.velocity.x));
+        animator.SetBool("IsJumping", isjumping);
+        //animator.SetBool("isattacking", canattack);
+
+        StartCoroutine(Dead());
         Crouch();
         Interact();
+        healthbar.SetHealth(currenthealth);
         if (Input.GetKeyDown(KeyCode.Z))
         {
             StartCoroutine(FireBallSpell());
         }
         if (Input.GetMouseButtonDown(0))
         {
+            animator.Play("Attack");
             StartCoroutine(Attack());
         }
         if (Input.GetKeyDown(KeyCode.Space))
@@ -233,7 +265,7 @@ public class PlayerControl : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.V))
         {
-            FireflySpell();
+            StartCoroutine(FireflySpell());
         }
     }
     void FixedUpdate()

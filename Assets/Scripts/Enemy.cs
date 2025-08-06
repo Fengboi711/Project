@@ -26,11 +26,15 @@ public class Enemy : MonoBehaviour
     Vector2 pointb;
     Vector2 targetpoint;
     Vector2 attackhitbox = Vector2.zero;
+    Vector2 vectoroffset = new Vector2(0, 1);
     Obstacle obstacle;
-
+    public Animator animator;
+    bool isdead = false;
+    BoxCollider2D box;
     // Start is called before the first frame update
     void Start()
     {
+        box = GetComponent<BoxCollider2D>();
         enemycontrol = GetComponent<Rigidbody2D>();
         pointa = (Vector2)enemyspawn.position + new Vector2(offset,0);
         pointb = (Vector2)enemyspawn.position - new Vector2(offset, 0);
@@ -116,24 +120,30 @@ public class Enemy : MonoBehaviour
     {
         if (isattacking) yield break;
         attackhitbox = new Vector2(2, 2);
-        Collider2D attackcollider = Physics2D.OverlapBox(transform.position+transform.right,attackhitbox, 0f);
+        Collider2D attackcollider = Physics2D.OverlapBox((Vector2)(transform.position+transform.right)+ vectoroffset,attackhitbox, 0f);
         if(attackcollider != null && attackcollider.CompareTag("Player") && !isstunned)
         {
             isattacking = true;
+            
         }
-        while(isattacking == true)
+        while (isattacking == true)
         {
+            
             PlayerControl playercheck = attackcollider.GetComponent<PlayerControl>();
-            playercheck.health -= 1;
+            animator.Play("HeroKnight_Attack1");
+            playercheck.currenthealth -= 1;
             yield return new WaitForSeconds(1f);
             isattacking = false;
+            
         }
-        
-        
+
+
+
 
     }
     void CheckLineOfSight()
     {
+        
         RaycastHit2D hitdata;
         LayerMask laddermask = ~mask;
         lineofsight = player.transform.position - transform.position;
@@ -165,12 +175,19 @@ public class Enemy : MonoBehaviour
         if (isclimbing) yield break;
 
     }
-    void Dead()
+    IEnumerator Dead()
     {
         if (enemyhealth <= 0)
         {
+            isdead = true;
+            speed = 0;
+            box.isTrigger = true;
+            animator.Play("HeroKnight_Death");
+
+            yield return new WaitForSeconds(7f);
             Destroy(gameObject);
-            
+
+
         }
         Debug.Log("Enemy Health: " + enemyhealth);
     }
@@ -178,10 +195,14 @@ public class Enemy : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        
         CheckLineOfSight();
         StartCoroutine(Patrol());
+        animator.SetFloat("Speed", Mathf.Abs(enemycontrol.velocity.x));
         StartCoroutine(Attack());
-        Dead();
+        
+        StartCoroutine(Dead());
+        
         if (isstunned)
         {
             StartCoroutine(Stunned());
@@ -225,6 +246,6 @@ public class Enemy : MonoBehaviour
     void OnDrawGizmos()
     {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(transform.position+transform.right, attackhitbox);
+        Gizmos.DrawWireCube((Vector2)(transform.position+transform.right), attackhitbox);
     }
 }

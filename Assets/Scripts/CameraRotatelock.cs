@@ -15,6 +15,6 @@ public class CameraRotatelock : MonoBehaviour
 
     void Update()
     {
-        transform.position = new Vector3(player.transform.position.x, player.transform.position.y, player.transform.position.z - 7);
+        transform.position = new Vector3(player.transform.position.x, player.transform.position.y + 1, player.transform.position.z - 7);
     }
 }

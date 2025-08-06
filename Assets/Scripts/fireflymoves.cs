@@ -6,27 +6,56 @@ public class fireflymoves : MonoBehaviour
 {
     public Vector2 flyposition;
     PlayerControl player;
-    Enemy enemy;
-    Vector2 directionofenemy;
+    GameObject[] enemy;
+    GameObject currentenemy;
+    Enemy enemyscript;
+    
     bool isattacking = false;
+    float closest = Mathf.Infinity;
     // Start is called before the first frame update
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerControl>();
-        enemy = GameObject.FindGameObjectWithTag("Enemy").GetComponent<Enemy>();
+        enemy = GameObject.FindGameObjectsWithTag("Enemy");
     }
 
+    GameObject FindClosestEnemy()
+    {
+        foreach(GameObject enemies in enemy)
+        {
+            Vector2 distance = enemies.transform.position - transform.position;
+            if(distance.magnitude < closest)
+            {
+                closest = distance.magnitude;
+                currentenemy = enemies;
+                return currentenemy;
+                
+            }
+            
+        }
+        return currentenemy;
+        
+    }
+
+    IEnumerator DestroyFireflies()
+    {
+        yield return new WaitForSeconds(5f);
+        Destroy(gameObject);
+    }
     // Update is called once per frame
     void Update()
     {
-        directionofenemy = enemy.transform.position - transform.position;
-        if(directionofenemy.magnitude < 5f)
+        FindClosestEnemy();
+        
+        if(closest < 5f)
         {
             isattacking = true;
             if (isattacking)
             {
-                transform.position = Vector2.MoveTowards((transform.position), (Vector2)enemy.transform.position + flyposition, 5f * Time.deltaTime);
-                enemy.isstunned = true;
+                enemyscript = currentenemy.GetComponent<Enemy>();
+                transform.position = Vector2.MoveTowards((transform.position), (Vector2)currentenemy.transform.position + flyposition, 5f * Time.deltaTime);
+                enemyscript.isstunned = true;
+                StartCoroutine(DestroyFireflies());
             }
             
         }
